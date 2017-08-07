@@ -204,7 +204,7 @@ class MySVD(Function):
         pL_pX_2 = torch.mm( U,  torch.mm( temp, V.t() ))
 
         S2 = S*S
-        K = torch.diag( S2 ) .resize_(n,1) - torch.diag( S2 ).resize_(1, n)
+        K = torch.diag( S2 ).view(n,1) - torch.diag( S2 ).view(1, n)
         K = torch.pow(K, -1)
         K[torch.max(K) == K] = 0
         temp = torch.mm(V.t(), (pL_pV - torch.mm(V, torch.mm(D.t(), torch.mm( U, S_full )) ) ))
@@ -270,7 +270,7 @@ class MySVDTrig(Function):
             S_full = S
 
         S2 = S * S
-        K = torch.diag(S2).resize_(n, 1) - torch.diag(S2).resize_(1, n)
+        K = torch.diag(S2).view(n, 1) - torch.diag(S2).view(1, n)
         K = torch.pow(K, -1)
         K[torch.max(K) == K] = 0
         temp = torch.mm(V.t(), pL_pV)
@@ -307,7 +307,7 @@ def perspective_projection(X, K):
 
     KX = K.mm(X)
     num = X.size()[1]
-    ProjX = torch.div(KX[0:2], KX[2].resize(1, num))
+    ProjX = torch.div(KX[0:2], KX[2].view(1, num))
 
     return ProjX
 
@@ -413,7 +413,7 @@ class SamplingFromImages(Module):
             uu = torch.clamp(proj[0] + 1, min=0, max=W - 1).int()
             vu = torch.clamp(proj[1] + 1, min=0, max=H - 1).int()
 
-            # img_vec = img.resize(C, H * W)
+            # img_vec = img.view(C, H * W)
             img_vec = img.contiguous().view(C, H * W)
 
             img_ll = img_vec[:, (vl * W + ul).data.long()]
@@ -450,7 +450,7 @@ class SamplingFromImages(Module):
             uu = torch.clamp(uu, min=0, max=W - 1)
             vu = torch.clamp(vu, min=0, max=H - 1)
 
-            # img_vec = img.resize(C, H * W)
+            # img_vec = img.view(C, H * W)
             img_vec = img.contiguous().view(C, H * W)
 
             img_ll = img_vec[:, (vl * W + ul).data.long()]
@@ -504,7 +504,7 @@ class MySamplingFromImages(Function):
         uu = torch.clamp(ul + 1, min=0, max=W-1)
         vu = torch.clamp(vl + 1, min=0, max=H-1)
 
-        img_vec = img.resize_(C, H*W)
+        img_vec = img.view(C, H*W)
 
         img_ll = img_vec[:, vl*W + ul]
         img_ul = img_vec[:, vu*W + ul]
