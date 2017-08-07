@@ -69,8 +69,10 @@ trans = Variable( torch.Tensor( np.random.rand(3) ), requires_grad = True )
 vertices = Variable( torch.Tensor( np.random.rand(3, 1) ) , requires_grad = False )
 
 """rotation"""
+print "rotation"
 gradient_check(rigid_transformation, rot, trans, vertices, id_list=[0])
 """translation"""
+print "translation"
 gradient_check(rigid_transformation, rot, trans, vertices, id_list=[1])
 """vertices"""
 # print "rigid transformation, vertices gradient"
@@ -83,6 +85,7 @@ print numdiff_jacobian(func, x0)
 print jac(x0)
 
 """perspective projection"""
+print "perspective projection"
 K = Variable( torch.Tensor( np.random.rand(3,3) + 1 ), requires_grad = True )
 X = Variable( torch.Tensor( np.random.rand(3, 1) ), requires_grad = True )
 gradient_check( perspective_projection, X, K, id_list=[0])

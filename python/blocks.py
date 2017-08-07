@@ -59,7 +59,7 @@ def convrelu_block( num_inputs, num_outputs, kernel_size, stride, leaky_coef ):
     :return: (Conv + ReLU) block
     """
 
-    """ this block does one 2D convolutions, first on row, then on column """
+    """ this block does one 2D convolutions """
 
     input = num_inputs; output = num_outputs
     k = kernel_size; lc = leaky_coef
@@ -108,7 +108,7 @@ def predict_motion_block( num_inputs , leaky_coef = 0.1):
     """
 
     """
-    this block is --> (Conv+ReLU) --> FC --> FC --> FC -->,
+    this block is --> (Conv+ReLU) --> (FC+ReLU) --> (FC+ReLU) --> (FC+ReLU) -->,
     the output is rotation, translation and scale
     """
 
@@ -378,7 +378,9 @@ class DepthMotionBlock(nn.Module):
 
         # batch_size = scale.size(0)
 
-        depth = depth_normal[:, 0:1, :, :] * scale.expand_as( depth_normal[:, 0:1, :, :] )
+        # depth = depth_normal[:, 0:1, :, :] * scale.expand_as( depth_normal[:, 0:1, :, :] )
+        depth = depth_normal[:, 0:1, :, :] * scale.view(-1, 1, 1, 1)
+
         normal = depth_normal[:, 1:4, :, :]
 
         predictions = {
@@ -432,7 +434,7 @@ class RefinementBlock(nn.Module):
         W = image1.shape[-1]
         H = image1.shape[-2]
 
-        up_sample = nn.UpsamplingNearest2d(size=(H, W))
+        up_sample = nn.Upsample(size=(H, W), mode='nearest')
         depth_upsampled = up_sample(depth)
 
         input = torch.cat(

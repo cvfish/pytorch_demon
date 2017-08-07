@@ -143,7 +143,7 @@ class MySVD(Function):
 
             """check the singular values to make sure they are different"""
             n = S.size(0)
-            diff = S.view(n, 1).expand(n,n) - S.view(1,n).expand(n,n)
+            diff = S.view(n, 1) - S.view(1,n)
             if(torch.sum( diff == 0 ) > n):
                 print "there are same singular values"
 
@@ -204,7 +204,7 @@ class MySVD(Function):
         pL_pX_2 = torch.mm( U,  torch.mm( temp, V.t() ))
 
         S2 = S*S
-        K = torch.diag( S2 ) .resize_(n,1).expand(n,n) - torch.diag( S2 ).resize_(1, n).expand(n,n)
+        K = torch.diag( S2 ) .resize_(n,1) - torch.diag( S2 ).resize_(1, n)
         K = torch.pow(K, -1)
         K[torch.max(K) == K] = 0
         temp = torch.mm(V.t(), (pL_pV - torch.mm(V, torch.mm(D.t(), torch.mm( U, S_full )) ) ))
@@ -237,7 +237,7 @@ class MySVDTrig(Function):
 
             """check the singular values to make sure they are different"""
             n = S.size(0)
-            diff = S.view(n, 1).expand(n, n) - S.view(1, n).expand(n, n)
+            diff = S.view(n, 1) - S.view(1, n)
             if (torch.sum(diff == 0) > n):
                 print "there are same singular values"
 
@@ -270,7 +270,7 @@ class MySVDTrig(Function):
             S_full = S
 
         S2 = S * S
-        K = torch.diag(S2).resize_(n, 1).expand(n, n) - torch.diag(S2).resize_(1, n).expand(n, n)
+        K = torch.diag(S2).resize_(n, 1) - torch.diag(S2).resize_(1, n)
         K = torch.pow(K, -1)
         K[torch.max(K) == K] = 0
         temp = torch.mm(V.t(), pL_pV)
@@ -294,7 +294,7 @@ X: 3xn
 def rigid_transformation(rot, trans, vertices):
 
     rot_mat = axis_angle_to_rotation_matrix(rot)
-    X = rot_mat.mm(vertices) + trans.resize(3, 1).expand_as(vertices)
+    X = rot_mat.mm(vertices) + trans.view(3, 1)
 
     return X
 
@@ -307,7 +307,7 @@ def perspective_projection(X, K):
 
     KX = K.mm(X)
     num = X.size()[1]
-    ProjX = torch.div(KX[0:2], KX[2].resize(1, num).expand(2, num))
+    ProjX = torch.div(KX[0:2], KX[2].resize(1, num))
 
     return ProjX
 
@@ -363,7 +363,7 @@ def triangulate_points(Ps, W):
 
     for j in range(points):
 
-        A = A12 - A33 * UV[:, j].contiguous().view(-1,1).expand_as(A33)
+        A = A12 - A33 * UV[:, j].contiguous().view(-1,1)
 
         """
         fix me, write a svd layer which supports backprop
@@ -375,7 +375,7 @@ def triangulate_points(Ps, W):
 
         X = my_svd_trig(A)
 
-        xyz = X[0:3] / X[3].expand_as(X[0:3])
+        xyz = X[0:3] / X[3]
 
         XYZ += (xyz, )
 
@@ -416,26 +416,15 @@ class SamplingFromImages(Module):
             # img_vec = img.resize(C, H * W)
             img_vec = img.contiguous().view(C, H * W)
 
-            """unfortunately, this does not work"""
-            # img_ll = img_vec[:, (vl * W + ul).data.long()]
-            # img_ul = img_vec[:, (vu * W + ul).data.long()]
-            # img_lu = img_vec[:, (vl * W + uu).data.long()]
-            # img_uu = img_vec[:, (vu * W + uu).data.long()]
+            img_ll = img_vec[:, (vl * W + ul).data.long()]
+            img_ul = img_vec[:, (vu * W + ul).data.long()]
+            img_lu = img_vec[:, (vl * W + uu).data.long()]
+            img_uu = img_vec[:, (vu * W + uu).data.long()]
 
-            img_ll = img_vec.transpose(0, 1)[(vl * W + ul).data.long()].transpose(0, 1)
-            img_ul = img_vec.transpose(0, 1)[(vu * W + ul).data.long()].transpose(0, 1)
-            img_lu = img_vec.transpose(0, 1)[(vl * W + uu).data.long()].transpose(0, 1)
-            img_uu = img_vec.transpose(0, 1)[(vu * W + uu).data.long()].transpose(0, 1)
-
-            # values = (1 - delta_u) * (1 - delta_v) * img_ll + \
-            #          (1 - delta_u) * delta_v * img_ul + \
-            #          delta_u * (1 - delta_v) * img_lu + \
-            #          delta_u * delta_v * img_uu
-
-            du = delta_u.view(1, -1).expand_as(img_ll)
-            dv = delta_v.view(1, -1).expand_as(img_ll)
-
-            values = (1 - du) * (1 - dv) * img_ll + (1 - du) * dv * img_ul + du * (1 - dv) * img_lu + du * dv * img_uu
+            values = (1 - delta_u) * (1 - delta_v) * img_ll + \
+                     (1 - delta_u) * delta_v * img_ul + \
+                     delta_u * (1 - delta_v) * img_lu + \
+                     delta_u * delta_v * img_uu
 
             return  values
 
@@ -464,25 +453,26 @@ class SamplingFromImages(Module):
             # img_vec = img.resize(C, H * W)
             img_vec = img.contiguous().view(C, H * W)
 
-            img_ll = img_vec.transpose(0, 1)[(vl * W + ul).data.long()].transpose(0, 1)
-            img_ul = img_vec.transpose(0, 1)[(vu * W + ul).data.long()].transpose(0, 1)
-            img_lu = img_vec.transpose(0, 1)[(vl * W + uu).data.long()].transpose(0, 1)
-            img_uu = img_vec.transpose(0, 1)[(vu * W + uu).data.long()].transpose(0, 1)
+            img_ll = img_vec[:, (vl * W + ul).data.long()]
+            img_ul = img_vec[:, (vu * W + ul).data.long()]
+            img_lu = img_vec[:, (vl * W + uu).data.long()]
+            img_uu = img_vec[:, (vu * W + uu).data.long()]
 
-            # values = (1 - delta_u) * (1 - delta_v) * img_ll + \
-            #          (1 - delta_u) * delta_v * img_ul + \
-            #          delta_u * (1 - delta_v) * img_lu + \
-            #          delta_u * delta_v * img_uu
+            # """this will also work in the pytorch0.2"""
+            # img_ll = img.contiguous()[:, vl.data.long(), ul.data.long()]
+            # img_ul = img.contiguous()[:, vu.data.long(), ul.data.long()]
+            # img_lu = img.contiguous()[:, vl.data.long(), uu.data.long()]
+            # img_uu = img.contiguous()[:, vu.data.long(), uu.data.long()]
 
-            du = delta_u.view(1, -1).expand_as(img_ll)
-            dv = delta_v.view(1, -1).expand_as(img_ll)
-
-            values = (1 - du) * (1 - dv) * img_ll + (1 - du) * dv * img_ul + du * (1 - dv) * img_lu + du * dv * img_uu
+            values = (1 - delta_u) * (1 - delta_v) * img_ll + \
+                     (1 - delta_u) * delta_v * img_ul + \
+                     delta_u * (1 - delta_v) * img_lu + \
+                     delta_u * delta_v * img_uu
 
             boundary_mask = (mask == 0)
 
-            values = values * mask.expand_as(values).float() + \
-                     border_value * boundary_mask.expand_as(values).float()
+            values = values * mask.float() + \
+                     border_value * boundary_mask.float()
 
             return values
 

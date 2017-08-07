@@ -61,13 +61,13 @@ class DepthToFlow(Module):
                                 torch.ones(1, num)], 0)
 
         if(self.inverse_depth):
-            points = (1.0 / depth).view(1, height * width).expand_as(points_uvn) * \
+            points = (1.0 / depth).view(1, height * width) * \
                      torch.mm(invK1, Variable(points_uvn, requires_grad=False))
         else:
-            points = depth.resize(1, height * width).expand_as(points_uvn) * \
+            points = depth.resize(1, height * width) * \
                      torch.mm(invK1, Variable(points_uvn, requires_grad=False))
 
-        points2 = torch.mm(rotation, points) + trans.view(3, 1).expand_as(points)
+        points2 = torch.mm(rotation, points) + trans.view(3, 1)
 
         points2_uv = perspective_projection(points2, K2)
 
