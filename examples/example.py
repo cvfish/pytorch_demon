@@ -72,19 +72,10 @@ bootstrap_net = BootstrapNet()
 iterative_net = IterativeNet()
 refinement_net = RefinementNet()
 
-# initialize with parameters provided by demon repository https://github.com/lmb-freiburg/demon
-filename = '/home/rui/Work/demon/examples/demon_parameters.pkl'
-load_parameters(filename, (bootstrap_net, iterative_net, refinement_net))
-
-# """save the parameters"""
-# torch.save(bootstrap_net.state_dict(), "./bootstrap_net.pt")
-# torch.save(iterative_net.state_dict(), "./iterative_net.pt")
-# torch.save(refinement_net.state_dict(), "./refinement_net.pt")
-
-# """load parameters"""
-# bootstrap_net.load_state_dict(torch.load('./bootstrap_net.pt'))
-# iterative_net.load_state_dict(torch.load('./iterative_net.pt'))
-#refinement_net.load_state_dict(torch.load('./refinement_net.pt'))
+"""load parameters"""
+bootstrap_net.load_state_dict(torch.load('./bootstrap_net.pt'))
+iterative_net.load_state_dict(torch.load('./iterative_net.pt'))
+refinement_net.load_state_dict(torch.load('./refinement_net.pt'))
 
 # run the bootstrap net and 3 times iterative net
 img_pair = Variable( torch.FloatTensor(input_data['image_pair']), requires_grad=False )
