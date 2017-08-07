@@ -1,0 +1,19 @@
+#files
+
+# data
+test
+
+# ignore readme.txt
+readme.txt
+
+# pycharm file
+.idea
+
+# python file
+*.pyc
+
+# temp file
+*~
+
+# init model
+*.pt
